@@ -7,7 +7,7 @@
 <style>
   body {
     margin: 0;
-    background: #111;
+    background: #000;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -20,7 +20,7 @@
 
   canvas {
     display: block;
-    background: #111;
+    background: #000;
   }
 
   audio {
@@ -61,14 +61,14 @@ audio.addEventListener('play', () => {
 const bufferLength = analyser.frequencyBinCount;
 const dataArray = new Uint8Array(bufferLength);
 
-// Геометрії
+// Створюємо геометричні об’єкти
 const shapes = [];
-const shapeCount = 50;
+const shapeCount = 80; // більше форм
 for(let i=0; i<shapeCount; i++){
     shapes.push({
         x: Math.random()*canvas.width,
         y: Math.random()*canvas.height,
-        size: Math.random()*20 + 5,
+        size: Math.random()*25 + 5,
         color: `hsl(${Math.random()*360}, 80%, 60%)`,
         dx: (Math.random()-0.5)*2,
         dy: (Math.random()-0.5)*2
@@ -79,23 +79,33 @@ function draw(){
     requestAnimationFrame(draw);
     analyser.getByteFrequencyData(dataArray);
 
+    // Чорний фон із прозорим шлейфом
     ctx.fillStyle = 'rgba(0,0,0,0.1)';
     ctx.fillRect(0,0,canvas.width,canvas.height);
 
     for(let i=0; i<shapes.length; i++){
         let shape = shapes[i];
-        let scale = dataArray[i % bufferLength]/128; // вплив звуку
+        let scale = dataArray[i % bufferLength]/128; // реакція на звук
+        let radius = shape.size * scale;
+
+        // Малюємо багатокутники (трикутники)
         ctx.beginPath();
-        ctx.arc(shape.x, shape.y, shape.size*scale, 0, Math.PI*2);
+        for(let j=0; j<3; j++){
+            let angle = j * (2 * Math.PI / 3);
+            let px = shape.x + radius * Math.cos(angle);
+            let py = shape.y + radius * Math.sin(angle);
+            if(j===0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
         ctx.fillStyle = shape.color;
         ctx.fill();
-        ctx.closePath();
 
         // рух
         shape.x += shape.dx * scale;
         shape.y += shape.dy * scale;
 
-        // межі
+        // межі екрану
         if(shape.x < 0 || shape.x > canvas.width) shape.dx *= -1;
         if(shape.y < 0 || shape.y > canvas.height) shape.dy *= -1;
     }
@@ -103,6 +113,7 @@ function draw(){
 
 draw();
 
+// Адаптація до вікна
 window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
